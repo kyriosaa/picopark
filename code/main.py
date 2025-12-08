@@ -8,16 +8,16 @@ OLED_HEIGHT   = 32
 OLED_SDA_PIN  = 0
 OLED_SCL_PIN  = 1
 
-SEN1_TRIG_PIN = 2
-SEN1_ECHO_PIN = 3
-SEN2_TRIG_PIN = 4
-SEN2_ECHO_PIN = 5
-SEN3_TRIG_PIN = 6
-SEN3_ECHO_PIN = 7
+SEN1_TRIG_PIN = 7
+SEN1_ECHO_PIN = 8
+SEN2_TRIG_PIN = 9
+SEN2_ECHO_PIN = 10
+SEN3_TRIG_PIN = 11
+SEN3_ECHO_PIN = 12
 
-LED1_PIN = 8
-LED2_PIN = 9
-LED3_PIN = 10
+LED1_PIN = 13
+LED2_PIN = 14
+LED3_PIN = 15
 
 # ultrasonic distance threshold
 OCCUPIED_THRESHOLD_CM = 10
@@ -37,12 +37,9 @@ led3 = Pin(LED3_PIN, Pin.OUT)
 leds = [led1, led2, led3]
 
 def update_display(occupied_count, total_spots):
-    # ts will be drawn in the main loop based on actual status
     oled.fill(0)
-    oled.text("Smart Parking", 10, 0)
-    oled.text("Occupied:", 0, 20)
-    oled.text(f"{occupied_count}/{total_spots}", 80, 20)
-    oled.text("Spots:", 0, 40)
+    oled.text("Occupied Spots", 10, 0)
+    oled.text(f"{occupied_count}/3", 55, 20)
     oled.show()
 
 def main():
@@ -70,10 +67,7 @@ def main():
                 spot_status.append(False) # assume empty on error
 
         # update oled
-        oled.fill(0)
-        oled.text("Smart Parking", 10, 0)
-        oled.text(f"Occupied: {occupied_count}/3", 10, 20)
-        oled.show()
+        update_display(occupied_count, 3)
 
         # update led
         for i, is_occupied in enumerate(spot_status):

@@ -1,7 +1,7 @@
 from machine import Pin, I2C
 import time
-import ssd1306
-from hcsr04 import HCSR04
+import code.pico_gate.ssd1306 as ssd1306
+from code.pico_park.hcsr04 import HCSR04
 
 OLED_WIDTH    = 128
 OLED_HEIGHT   = 32

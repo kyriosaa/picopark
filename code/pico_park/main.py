@@ -3,7 +3,7 @@
 
 import time
 
-print("Pico B booted. main.py finished.")
+print("Pico A booted. main.py finished.")
 
 # Do NOTHING else here
 # You will manually run server.py from Thonny

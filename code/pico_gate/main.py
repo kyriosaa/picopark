@@ -20,16 +20,13 @@ GATE_OPEN_DUTY = 8000
 GATE_CLOSE_DUTY = 2000
 # 1000-9000 is a safe range to test, usually 1638 (0.5ms) to 8192 (2.5ms)
 
-
 OLED_WIDTH = 128
 OLED_HEIGHT = 32
 OLED_SDA_PIN = 0
 OLED_SCL_PIN = 1
 
-# Global state
 MAX_SPOTS = 3
 current_occupancy = 0
-
 
 def connect_wifi():
     wlan = network.WLAN(network.STA_IF)
@@ -41,14 +38,14 @@ def connect_wifi():
         if wlan.status() < 0 or wlan.status() >= 3:
             break
         max_wait -= 1
-        print('Waiting for connection...')
+        print('[STATUS]  Waiting for connection...')
         time.sleep(1)
         
     if wlan.status() != 3:
-        raise RuntimeError('Network connection failed')
+        raise RuntimeError('[ERROR]   Network connection failed')
     else:
         status = wlan.ifconfig()
-        print('Connected! IP = ' + status[0])
+        print('[SUCCESS] IP = ' + status[0])
         return status[0]
 
 # OLED UPDATE STUFF HERE
@@ -69,12 +66,12 @@ def core0_task(ip):
     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     s.bind(addr)
     s.listen(1)
-    print(f'[Core 0] Server listening on {ip}:{PORT}')
+    print(f'[Core 0]  Server listening on {ip}:{PORT}')
 
     while True:
         try:
             cl, addr = s.accept()
-            print('[Core 0] Client connected from', addr)
+            print('[Core 0]  Client connected from', addr)
             request = cl.recv(1024)
             request = str(request)
             
@@ -93,9 +90,9 @@ def core0_task(ip):
                     except:
                         pass
 
-                print(f"[Core 0] Request received. Spots: {occupied_count}")
+                print(f"[Core 0]  Request received. Spots: {occupied_count}")
                 
-                # Update global state
+                # update occupancy
                 if occupied_count.isdigit():
                     current_occupancy = int(occupied_count)
                 
@@ -108,12 +105,12 @@ def core0_task(ip):
             cl.close()
         except OSError as e:
             cl.close()
-            print('Connection closed')
+            print('[STATUS]  Connection closed')
 
 # runs the IO functions (gate control)
 # checks IR sensors and moves servos
 def core1_task():
-    print("[Core 1] Gate Control started.")
+    print("[Core 1]  Gate Control started.")
     
     entrance_ir = Pin(ENTRANCE_IR_PIN, Pin.IN, Pin.PULL_UP)
     exit_ir = Pin(EXIT_IR_PIN, Pin.IN, Pin.PULL_UP)
@@ -151,7 +148,7 @@ def core1_task():
                 entrance_servo.duty_u16(GATE_CLOSE_DUTY)
             else:
                 # keep open if within delay window, BUT check occupancy again? 
-                # Actually, if we opened it, we let them in.
+                # actually, if we opened it, we let them in.
                 entrance_servo.duty_u16(GATE_OPEN_DUTY)
                 
         if exit_ir.value() == 0:
@@ -175,7 +172,7 @@ def main():
     except KeyboardInterrupt:
         machine.reset()
     except Exception as e:
-        print(f"Error: {e}")
+        print(f"[ERROR]   {e}")
 
 if __name__ == "__main__":
     main()

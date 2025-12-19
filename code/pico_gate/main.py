@@ -4,12 +4,13 @@ import socket
 import time
 import _thread
 import machine
-import secrets
+import config
 from machine import Pin, I2C, PWM
 import ssd1306
+import shift_display
 
-SSID = secrets.SSID
-PASSWORD = secrets.PASSWORD
+SSID = config.SSID
+PASSWORD = config.PASSWORD
 PORT = 80
 
 ENTRANCE_IR_PIN = 16
@@ -25,8 +26,15 @@ OLED_HEIGHT = 32
 OLED_SDA_PIN = 0
 OLED_SCL_PIN = 1
 
-MAX_SPOTS = 3
+SR_DATA = 2
+SR_CLOCK = 3
+SR_LATCH = 4
+DIGIT_PINS = [8, 7, 6, 5]
+
+# global
+MAX_SPOTS = 4
 current_occupancy = 0
+full_display = None
 
 def connect_wifi():
     wlan = network.WLAN(network.STA_IF)
@@ -38,14 +46,14 @@ def connect_wifi():
         if wlan.status() < 0 or wlan.status() >= 3:
             break
         max_wait -= 1
-        print('[STATUS]  Waiting for connection...')
+        print("[STATUS]  Waiting for connection...")
         time.sleep(1)
         
     if wlan.status() != 3:
-        raise RuntimeError('[ERROR]   Network connection failed')
+        raise RuntimeError("[ERROR]   Network connection failed")
     else:
         status = wlan.ifconfig()
-        print('[SUCCESS] IP = ' + status[0])
+        print("[SUCCESS] IP = " + status[0])
         return status[0]
 
 # OLED UPDATE STUFF HERE
@@ -58,20 +66,21 @@ def update_oled(oled, data_to_process):
 # runs the networking functions
 # simple HTTP server to listen for requests
 def core0_task(ip):
-    global current_occupancy
+    global current_occupancy, full_display
     i2c = I2C(0, scl=Pin(OLED_SCL_PIN), sda=Pin(OLED_SDA_PIN))
     oled = ssd1306.SSD1306_I2C(OLED_WIDTH, OLED_HEIGHT, i2c)
-    addr = socket.getaddrinfo('0.0.0.0', PORT)[0][-1]
+    addr = socket.getaddrinfo("0.0.0.0", PORT)[0][-1]
+    full_display = shift_display.ShiftDisplay(SR_DATA, SR_CLOCK, SR_LATCH, DIGIT_PINS, common_anode=False)
     s = socket.socket()
     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     s.bind(addr)
     s.listen(1)
-    print(f'[Core 0]  Server listening on {ip}:{PORT}')
+    print(f"[Core 0]  Server listening on {ip}:{PORT}")
 
     while True:
         try:
             cl, addr = s.accept()
-            print('[Core 0]  Client connected from', addr)
+            print("[Core 0]  Client connected from", addr)
             request = cl.recv(1024)
             request = str(request)
             
@@ -95,6 +104,13 @@ def core0_task(ip):
                 # update occupancy
                 if occupied_count.isdigit():
                     current_occupancy = int(occupied_count)
+
+                    # update 7seg
+                    # if its not full then turn it off
+                    if current_occupancy >= MAX_SPOTS:
+                        full_display.show_full()
+                    else:
+                        full_display.clear()
                 
                 # update oled
                 update_oled(oled, occupied_count)
@@ -105,7 +121,7 @@ def core0_task(ip):
             cl.close()
         except OSError as e:
             cl.close()
-            print('[STATUS]  Connection closed')
+            print("[STATUS]  Connection closed")
 
 # runs the IO functions (gate control)
 # checks IR sensors and moves servos
@@ -173,6 +189,9 @@ def main():
         machine.reset()
     except Exception as e:
         print(f"[ERROR]   {e}")
+        print("[STATUS]  Resetting board in 5 seconds...")
+        time.sleep(5)
+        machine.reset()
 
 if __name__ == "__main__":
     main()

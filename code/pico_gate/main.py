@@ -20,10 +20,16 @@ GATE_OPEN_DUTY = 8000
 GATE_CLOSE_DUTY = 2000
 # 1000-9000 is a safe range to test, usually 1638 (0.5ms) to 8192 (2.5ms)
 
+
 OLED_WIDTH = 128
 OLED_HEIGHT = 32
 OLED_SDA_PIN = 0
 OLED_SCL_PIN = 1
+
+# Global state
+MAX_SPOTS = 3
+current_occupancy = 0
+
 
 def connect_wifi():
     wlan = network.WLAN(network.STA_IF)
@@ -49,12 +55,13 @@ def connect_wifi():
 def update_oled(oled, data_to_process):
     oled.fill(0)
     oled.text("Occupied Spots", 10, 0)
-    oled.text(f"{data_to_process}/6", 55, 20)
+    oled.text(f"{data_to_process}/{MAX_SPOTS}", 55, 20)
     oled.show()
 
 # runs the networking functions
 # simple HTTP server to listen for requests
 def core0_task(ip):
+    global current_occupancy
     i2c = I2C(0, scl=Pin(OLED_SCL_PIN), sda=Pin(OLED_SDA_PIN))
     oled = ssd1306.SSD1306_I2C(OLED_WIDTH, OLED_HEIGHT, i2c)
     addr = socket.getaddrinfo('0.0.0.0', PORT)[0][-1]
@@ -87,6 +94,10 @@ def core0_task(ip):
                         pass
 
                 print(f"[Core 0] Request received. Spots: {occupied_count}")
+                
+                # Update global state
+                if occupied_count.isdigit():
+                    current_occupancy = int(occupied_count)
                 
                 # update oled
                 update_oled(oled, occupied_count)
@@ -126,14 +137,21 @@ def core1_task():
         current_time = time.ticks_ms()
         
         # active low for both entrance and exit
+        # active low for both entrance and exit
         if entrance_ir.value() == 0:
-            entrance_servo.duty_u16(GATE_OPEN_DUTY)
-            entrance_last_blocked = current_time
+            if current_occupancy < MAX_SPOTS:
+                entrance_servo.duty_u16(GATE_OPEN_DUTY)
+                entrance_last_blocked = current_time
+            else:
+                # FULL - Ensure closed
+                entrance_servo.duty_u16(GATE_CLOSE_DUTY)
         else:
             # check delay once sensor clears
             if time.ticks_diff(current_time, entrance_last_blocked) > CLOSE_DELAY_MS:
                 entrance_servo.duty_u16(GATE_CLOSE_DUTY)
             else:
+                # keep open if within delay window, BUT check occupancy again? 
+                # Actually, if we opened it, we let them in.
                 entrance_servo.duty_u16(GATE_OPEN_DUTY)
                 
         if exit_ir.value() == 0:

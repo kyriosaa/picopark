@@ -70,7 +70,7 @@ def core0_task(ip):
     i2c = I2C(0, scl=Pin(OLED_SCL_PIN), sda=Pin(OLED_SDA_PIN))
     oled = ssd1306.SSD1306_I2C(OLED_WIDTH, OLED_HEIGHT, i2c)
     addr = socket.getaddrinfo("0.0.0.0", PORT)[0][-1]
-    full_display = shift_display.ShiftDisplay(SR_DATA, SR_CLOCK, SR_LATCH, DIGIT_PINS, common_anode=False)
+    full_display = shift_display.ShiftDisplay(SR_DATA, SR_CLOCK, SR_LATCH, DIGIT_PINS, common_anode=True, digit_active_high=True)
     s = socket.socket()
     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     s.bind(addr)

@@ -4,12 +4,20 @@ from machine import Pin, Timer
 import segment_font
 
 class ShiftDisplay:
-    def __init__(self, data_pin, clock_pin, latch_pin, digit_pins, common_anode=False):
+    def __init__(self, data_pin, clock_pin, latch_pin, digit_pins, common_anode=False, digit_active_high=None):
         self.data = Pin(data_pin, Pin.OUT)
         self.clock = Pin(clock_pin, Pin.OUT)
         self.latch = Pin(latch_pin, Pin.OUT)
         self.digits = [Pin(p, Pin.OUT) for p in digit_pins]
         self.common_anode = common_anode
+
+        if digit_active_high is None:
+            # default behavior:
+            # common cathode (False) -> active high digits (True)
+            # common anode (True) -> active low digits (False)
+            self.digit_active_high = not common_anode
+        else:
+            self.digit_active_high = digit_active_high
         
         self.buffer = [segment_font.BLANK] * 4
         self.timer = Timer()

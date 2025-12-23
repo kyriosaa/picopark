@@ -1,6 +1,6 @@
 import network
 import time
-import urequests
+import socket
 from machine import Pin
 from hcsr04 import HCSR04
 import config
@@ -43,6 +43,26 @@ def connect_wifi():
         status = wlan.ifconfig()
         print("[SUCCESS] Connection successful!")
         print("[SUCCESS] IP = " + status[0])
+
+def send_update_safe(url):
+    try:
+        # parse URL
+        _, _, host, path = url.split('/', 3)
+        port = 80
+        if ':' in host:
+            host, port = host.split(':')
+            port = int(port)
+        
+        addr = socket.getaddrinfo(host, port)[0][-1]
+        s = socket.socket()
+        s.settimeout(3.0)
+        s.connect(addr)
+        s.send(bytes('GET /%s HTTP/1.0\r\nHost: %s\r\n\r\n' % (path, host), 'utf8'))
+        s.close()
+        return True
+    except Exception as e:
+        print(f"[ERROR]   Send failed: {e}")
+        return False
 
 def main():
     print("[STATUS]  Initializing Parking Sensors...")
@@ -106,14 +126,13 @@ def main():
         
         if occupied_count != last_occupied_count or last_send_comp > HEARTBEAT:
             # send data to pico_gate
-            try:
-                url = f"{GATE_URL}/?occupied={occupied_count}"
-                print(f"[STATUS]  Sending to {url}...")
-                response = urequests.get(url)
-                print(f"[STATUS]  Response: {response.status_code}")
-                response.close()
-            except Exception as e:
-                print(f"[ERROR]   Communication Error: {e}")
+            url = f"{GATE_URL}/?occupied={occupied_count}"
+            print(f"[STATUS]  Sending to {url}...")
+            
+            if send_update_safe(url):
+                print(f"[STATUS]  Sent successfully")
+                last_occupied_count = occupied_count
+                last_send_time = current_time
             
         time.sleep(0.1)
 

@@ -2,10 +2,11 @@
 import network
 import socket
 import time
+import framebuf
 import _thread
 import machine
-import config
 from machine import Pin, I2C, PWM
+import config
 import ssd1306
 import shift_display
 
@@ -13,12 +14,12 @@ SSID = config.SSID
 PASSWORD = config.PASSWORD
 PORT = 80
 
-ENTRANCE_IR_PIN = 16
-ENTRANCE_SERVO_PIN = 17
-EXIT_IR_PIN = 18
-EXIT_SERVO_PIN = 19
-GATE_OPEN_DUTY = 8000 
-GATE_CLOSE_DUTY = 2000
+ENTRANCE_IR_PIN = 18
+ENTRANCE_SERVO_PIN = 19
+EXIT_IR_PIN = 16
+EXIT_SERVO_PIN = 17
+GATE_OPEN_DUTY = 5000 
+GATE_CLOSE_DUTY = 8000
 # 1000-9000 is a safe range to test, usually 1638 (0.5ms) to 8192 (2.5ms)
 
 OLED_WIDTH = 128
@@ -29,7 +30,7 @@ OLED_SCL_PIN = 1
 SR_DATA = 2
 SR_CLOCK = 3
 SR_LATCH = 4
-DIGIT_PINS = [8, 7, 6, 5]
+DIGIT_PINS = [13, 12, 11, 10]
 
 # global
 MAX_SPOTS = 4
@@ -55,12 +56,29 @@ def connect_wifi():
         status = wlan.ifconfig()
         print("[SUCCESS] IP = " + status[0])
         return status[0]
+    
+# beeg text
+def draw_text_big(oled, text, x, y, scale):
+    # default library has 8x8 and u cant scale it so we're gonna use a temp buffer
+    # and scale by pixel
+    w = len(text) * 8
+    h = 8
+    buf = bytearray(w * h // 8 + 1)
+    fb = framebuf.FrameBuffer(buf, w, h, framebuf.MONO_VLSB)
+    
+    fb.fill(0)
+    fb.text(text, 0, 0)
+    
+    for row in range(h):
+        for col in range(w):
+            if fb.pixel(col, row):
+                oled.fill_rect(x + (col * scale), y + (row * scale), scale, scale, 1)
 
 # OLED UPDATE STUFF HERE
 def update_oled(oled, data_to_process):
     oled.fill(0)
-    oled.text("Occupied Spots", 10, 0)
-    oled.text(f"{data_to_process}/{MAX_SPOTS}", 55, 20)
+    oled.text(f"SPOTS", 40, 0)
+    draw_text_big(oled, f"{data_to_process}/{MAX_SPOTS}", 25, 12, 3)
     oled.show()
 
 # runs the networking functions
@@ -74,7 +92,7 @@ def core0_task(ip):
     s = socket.socket()
     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     s.bind(addr)
-    s.listen(1)
+    s.listen(5)
     print(f"[Core 0]  Server listening on {ip}:{PORT}")
 
     while True:
@@ -112,11 +130,11 @@ def core0_task(ip):
                     else:
                         full_display.clear()
                 
-                # update oled
-                update_oled(oled, occupied_count)
-                
                 response = "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\nUpdated"
                 cl.send(response)
+                
+                # update oled
+                update_oled(oled, occupied_count)
             
             cl.close()
         except OSError as e:

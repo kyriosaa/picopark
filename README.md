@@ -85,27 +85,25 @@ Since the 7-segment display is only used to show the word "FULL', we included ju
 
 ## Images
 
-> Display + gate control & HTTP host
+> Project overview
+> <img src="images/picopark_overview.jpg">
 
-<img src="images/picopark_header.JPG">
+> Display + gate control & HTTP host
+> <img src="images/picopark_header.JPG">
 
 > Parking spots
-
-<img src="images/picopark_2.jpg">
+> <img src="images/picopark_2.jpg">
 
 > Parking spots control & HTTP client
-
-<img src="images/picopark_3.jpg">
+> <img src="images/picopark_3.jpg">
 
 > Power source (supplies power to both Raspberry Pi boards at the same time)
-
-<img src="images/picopark_4.jpg">
+> <img src="images/picopark_4.jpg">
 
 > Miscellaneous photos during the build process
-
-<img src="images/picopark_skeleton2.JPG">
-<img src="images/picopark_hostbuild.JPG">
-<img src="images/picopark_skeleton.JPG">
-<img src="images/picopark_bus.JPG">
-<img src="images/picopark_ultrasonic.JPG">
-<img src="images/picopark_client.JPG">
+> <img src="images/picopark_skeleton2.JPG">
+> <img src="images/picopark_hostbuild.JPG">
+> <img src="images/picopark_skeleton.JPG">
+> <img src="images/picopark_bus.JPG">
+> <img src="images/picopark_ultrasonic.JPG">
+> <img src="images/picopark_client.JPG">

@@ -1,4 +1,4 @@
-<img src="images/picopark_1.JPG">
+<img src="images/picopark_1.jpg">
 
 # PicoPark
 
@@ -87,7 +87,7 @@ Since the 7-segment display is only used to show the word "FULL', we included ju
 
 > Display + gate control & HTTP host
 
-<img src="images/picopark_header.jpg">
+<img src="images/picopark_header.JPG">
 
 > Parking spots
 
